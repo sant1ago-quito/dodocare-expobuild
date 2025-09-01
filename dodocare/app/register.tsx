@@ -1,62 +1,32 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { router } from 'expo-router';
 import Background from '../assets/svg/Background';
+import { auth } from '../firebase';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 
 export default function Register() {
   const [Nombre, setNombre] = useState('');
   const [correo, setCorreo] = useState('');
   const [contrasena, setContrasena] = useState('');
 
-  const InsertarUsuario = () => {
-    // Aquí va la lógica para registrar usuario usando Nombre, correo y contrasena
-    var usuario = {
-      Nombre: Nombre,
-      correo: correo,
-      contrasena: contrasena,
+  const InsertarUsuario = async () => {
+    if (!Nombre || !correo || !contrasena) {
+      Alert.alert('Error', 'Por favor, completa todos los campos.');
+      return;
+    }
+    if (contrasena.length < 8) {
+      Alert.alert('Error', 'La contraseña debe tener al menos 8 caracteres.');
+      return;
+    }
+    try {
+      await createUserWithEmailAndPassword(auth, correo, contrasena);
+      Alert.alert('Éxito', 'Usuario registrado correctamente.');
+      router.push('/login-form');
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'No se pudo registrar el usuario.');
+    }
   };
-  if (usuario.Nombre.length==0 || usuario.correo.length==0  || usuario.contrasena.length==0) 
-    {
-      alert("Por favor, completa todos los campos.");
-      return;
-    }
-    if (usuario.contrasena.length < 8) {
-      alert("La contraseña debe tener al menos 8 caracteres.");
-      return;
-    }
-  else {
-      var InsertAPIURL="http://192.168.0.10:80/api/conexion.php"
-      var headers = {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      };
-      var Data = {
-        Nombre: usuario.Nombre,
-        correo: usuario.correo,
-        contrasena: usuario.contrasena
-      };
-
-      fetch(InsertAPIURL, 
-        {
-        method: 'POST',
-        headers: headers,
-        body: JSON.stringify(Data)
-        }
-        )
-        .then((response) => response.json())
-        .then((response) => 
-          {
-            alert(response[0].mensaje);
-            router.push('/login-form'); // Redirige al formulario de inicio de sesión
-            
-          })
-          .catch((error) => 
-            {
-              alert("Error: " + error);
-            })
-
-    }
-  }
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
