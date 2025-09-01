@@ -14,29 +14,11 @@ export default function LoginScreen() {
       Alert.alert('Error', 'Por favor, ingresa tu correo y contraseña.');
       return;
     }
-
     try {
-      const response = await fetch('http://192.168.0.10:80/api/login.php', {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          correo: correo,
-          contrasena: contrasena
-        })
-      });
-      const data = await response.json();
-
-      if (data.success) {
-        login();
-        router.replace('/(tabs)/home'); // Ajusta la ruta a tu home
-      } else {
-        Alert.alert('Error', 'Correo o contraseña incorrectos.');
-      }
+      await login(correo, contrasena);
+      router.replace('/(tabs)/home'); // Ajusta la ruta a tu home
     } catch (error) {
-      Alert.alert('Error', 'No se pudo conectar al servidor.');
+      Alert.alert('Error', 'Correo o contraseña incorrectos o error de conexión.');
     }
   };
 

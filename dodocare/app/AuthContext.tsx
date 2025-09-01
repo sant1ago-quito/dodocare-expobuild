@@ -1,26 +1,41 @@
 import React, { createContext, useContext, useState } from 'react';
+import { auth } from '../firebase';
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 
 const AuthContext = createContext({
   isGuest: false,
   isLogged: false,
-  login: () => {},
+  login: async (_email?: string, _password?: string) => {},
   loginAsGuest: () => {},
-  logout: () => {},
+  logout: async () => {},
 });
 
 export const AuthProvider: React.FC<React.PropsWithChildren<{}>> = ({ children }) => {
   const [isGuest, setIsGuest] = useState(false);
   const [isLogged, setIsLogged] = useState(false);
 
-  const login = () => {
-    setIsLogged(true);
-    setIsGuest(false);
+  const login = async (email?: string, password?: string) => {
+    if (email && password) {
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        setIsLogged(true);
+        setIsGuest(false);
+      } catch (error) {
+        setIsLogged(false);
+        // Puedes manejar el error aquí
+      }
+    }
   };
   const loginAsGuest = () => {
     setIsLogged(false);
     setIsGuest(true);
   };
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      // Puedes manejar el error aquí
+    }
     setIsLogged(false);
     setIsGuest(false);
   };
