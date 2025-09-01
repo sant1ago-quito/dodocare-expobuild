@@ -2,44 +2,23 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert, Image } from 'react-native';
 import { router } from 'expo-router';
 import Background from '../assets/svg/Background';
+import { auth } from '../firebase';
+import { sendPasswordResetEmail } from 'firebase/auth';
 
 export default function ForgotPassword() {
   const [correo, setCorreo] = useState('');
-  const [nuevaContrasena, setNuevaContrasena] = useState('');
-  const [confirmarContrasena, setConfirmarContrasena] = useState('');
 
   const handleResetPassword = async () => {
-    if (!correo || !nuevaContrasena || !confirmarContrasena) {
-      Alert.alert('Error', 'Por favor, completa todos los campos.');
+    if (!correo) {
+      Alert.alert('Error', 'Por favor, ingresa tu correo electrónico.');
       return;
     }
-    if (nuevaContrasena !== confirmarContrasena) {
-      Alert.alert('Error', 'Las contraseñas no coinciden.');
-      return;
-    }
-    if (nuevaContrasena.length < 8) {
-      Alert.alert('Error', 'La contraseña debe tener al menos 8 caracteres.');
-      return;
-    }
-
     try {
-      const response = await fetch('http://192.168.0.10:80/api/reset_password.php', {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ correo, nuevaContrasena })
-      });
-      const data = await response.json();
-      if (data.success) {
-        Alert.alert('Éxito', 'Contraseña actualizada correctamente.');
-        router.replace('/login-form');
-      } else {
-        Alert.alert('Error', data.mensaje || 'No se pudo actualizar la contraseña.');
-      }
-    } catch (error) {
-      Alert.alert('Error', 'No se pudo conectar al servidor.');
+      await sendPasswordResetEmail(auth, correo);
+      Alert.alert('Éxito', 'Se ha enviado un correo para restablecer tu contraseña.');
+      router.replace('/login-form');
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'No se pudo enviar el correo de recuperación.');
     }
   };
 
@@ -59,7 +38,7 @@ export default function ForgotPassword() {
           />
           <Text style={styles.title}>Restablecer Contraseña</Text>
           <Text style={styles.subtitle}>
-            Ingresa tu correo y la nueva contraseña
+            Ingresa tu correo y te enviaremos un enlace para restablecer tu contraseña
           </Text>
           <TextInput
             placeholder="Correo electrónico"
@@ -69,24 +48,8 @@ export default function ForgotPassword() {
             value={correo}
             onChangeText={setCorreo}
           />
-          <TextInput
-            placeholder="Nueva contraseña"
-            placeholderTextColor="#999"
-            style={styles.input}
-            secureTextEntry
-            value={nuevaContrasena}
-            onChangeText={setNuevaContrasena}
-          />
-          <TextInput
-            placeholder="Confirmar nueva contraseña"
-            placeholderTextColor="#999"
-            style={styles.input}
-            secureTextEntry
-            value={confirmarContrasena}
-            onChangeText={setConfirmarContrasena}
-          />
           <TouchableOpacity style={styles.button} onPress={handleResetPassword}>
-            <Text style={styles.buttonText}>Cambiar Contraseña</Text>
+            <Text style={styles.buttonText}>Enviar correo de recuperación</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={styles.backLink}

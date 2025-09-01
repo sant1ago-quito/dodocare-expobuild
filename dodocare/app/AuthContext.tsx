@@ -22,8 +22,10 @@ export const AuthProvider: React.FC<React.PropsWithChildren<{}>> = ({ children }
         setIsGuest(false);
       } catch (error) {
         setIsLogged(false);
-        // Puedes manejar el error aquí
+        throw error; // Lanzar el error para que el formulario lo capture
       }
+    } else {
+      throw new Error('Email y contraseña requeridos');
     }
   };
   const loginAsGuest = () => {
