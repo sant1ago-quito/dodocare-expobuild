@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@react-native-picker/picker": "^2.11.0",
+    "react-native-calendars": "^1.1312.1"
+  }
+}
