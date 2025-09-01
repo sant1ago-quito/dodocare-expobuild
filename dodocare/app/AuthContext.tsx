@@ -33,3 +33,14 @@ export const AuthProvider: React.FC<React.PropsWithChildren<{}>> = ({ children }
 };
 
 export const useAuth = () => useContext(AuthContext);
+
+// Default export: wrapper component for routing
+const AuthContextScreen: React.FC = () => {
+  return (
+    <AuthProvider>
+      {/* Puedes renderizar children o una pantalla de login aquí si lo deseas */}
+      <></>
+    </AuthProvider>
+  );
+};
+export default AuthContextScreen;
