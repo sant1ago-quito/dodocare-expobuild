@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import Background from '../assets/svg/Background'; // Ajusta la ruta si es necesario
 import { useAuth } from './AuthContext'; // Ajusta la ruta si es necesario
 
+
 export default function LoginScreen() {
   const [correo, setCorreo] = useState('');
   const [contrasena, setContrasena] = useState('');
@@ -16,6 +17,7 @@ export default function LoginScreen() {
     }
     try {
       await login(correo, contrasena);
+  // ...notificación local eliminada...
       router.replace('/(tabs)/home'); // Ajusta la ruta a tu home
     } catch (error) {
       Alert.alert('Error', 'Correo o contraseña incorrectos o error de conexión.');
