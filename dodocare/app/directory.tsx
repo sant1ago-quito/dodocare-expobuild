@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,43 +8,36 @@ import {
   TouchableOpacity,
   Image,
   Linking,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { collection, getDocs, DocumentData } from 'firebase/firestore';
+import { db } from '../firebase';
 
 export default function DirectoryScreen() {
   const navigation = useNavigation();
   const [search, setSearch] = useState('');
+  const [doctors, setDoctors] = useState<DocumentData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchDoctors() {
+      try {
+        const querySnapshot = await getDocs(collection(db, 'doctors'));
+        const docs = querySnapshot.docs.map(doc => doc.data());
+        setDoctors(docs);
+      } catch (error) {
+        console.error('Error fetching doctors:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchDoctors();
+  }, []);
 
   const handleEmergencyCall = () => {
     Linking.openURL('tel:134');
   };
-
-  const doctors = [
-    {
-      name: 'Dr. Alexis Benitez Hernandez',
-      specialty: 'Médico Internista',
-      address: 'Clínica Central, Calle 5, San Miguel',
-      image: require('../assets/images/Dr1.webp'),
-    },
-    {
-      name: 'Dr. Gilberto Edmundo de Evián',
-      specialty: 'Ginecólogo-Obstetra',
-      address: 'Hospital de la Mujer, Av. Roosevelt, San Miguel',
-      image: require('../assets/images/Dr2.jpg'),
-    },
-    {
-      name: 'Dr. Enrique Guerrero Perla',
-      specialty: 'Cirujano General',
-      address: 'Centro Médico El Salvador, Col. Médica',
-      image: require('../assets/images/Dr3.jpg'),
-    },
-    {
-      name: 'Dra. Jackeline Lissbeth Flores Hernández',
-      specialty: 'Ginecología Obstetra',
-      address: 'Hospital Materno Infantil, Calle Rubén Darío',
-      image: require('../assets/images/Dr2.jpg'),
-    },
-  ];
 
   const filteredDoctors = doctors.filter((doctor) =>
     doctor.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -70,17 +63,25 @@ export default function DirectoryScreen() {
 
         <Text style={styles.filterText}>Filtrado por: Especialidad o Nombre</Text>
 
-        {/* Lista de doctores */}
-        {filteredDoctors.map((doctor, index) => (
-          <View key={index} style={styles.card}>
-            <Image source={doctor.image} style={styles.avatar} />
-            <View style={styles.info}>
-              <Text style={styles.name}>{doctor.name}</Text>
-              <Text style={styles.specialty}>{doctor.specialty}</Text>
-              <Text style={styles.address}>{doctor.address}</Text>
+        {/* Indicador de carga */}
+        {loading ? (
+          <ActivityIndicator size="large" color="#4CAF50" />
+        ) : (
+          /* Lista de doctores */
+          filteredDoctors.map((doctor, index) => (
+            <View key={index} style={styles.card}>
+              {/* Si quieres mostrar un ícono genérico, puedes usar un emoji o un componente de íconos */}
+              <View style={styles.avatarPlaceholder}>
+                <Text style={{ fontSize: 32 }}>👨‍⚕️</Text>
+              </View>
+              <View style={styles.info}>
+                <Text style={styles.name}>{doctor.name || 'Sin nombre'}</Text>
+                <Text style={styles.specialty}>{doctor.specialty || 'Sin especialidad'}</Text>
+                <Text style={styles.address}>{doctor.address || 'Sin dirección'}</Text>
+              </View>
             </View>
-          </View>
-        ))}
+          ))
+        )}
 
         {/* Botón Volver */}
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
@@ -143,6 +144,15 @@ const styles = StyleSheet.create({
     height: 64,
     borderRadius: 32,
     marginRight: 12,
+  },
+  avatarPlaceholder: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    marginRight: 12,
+    backgroundColor: '#e0e0e0',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   info: {
     flex: 1,

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,43 +6,38 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
-  Image,
   Linking,
 } from 'react-native';
 import { Calendar } from 'react-native-calendars';
 import { useNavigation } from '@react-navigation/native';
-
-const doctors = [
-  {
-    name: 'Dr. Alexis Benitez Hernandez',
-    specialty: 'Neumólogo Internista',
-    image: require('../../assets/images/Dr1.webp'),
-  },
-  {
-    name: 'Dr. Gilberto Edmundo de Evián',
-    specialty: 'Ginecólogo-Obstetra',
-    image: require('../../assets/images/Dr2.jpg'),
-  },
-  {
-    name: 'Dr. Enrique Guerrero Perla',
-    specialty: 'Cirujano General',
-    image: require('../../assets/images/Dr3.jpg'),
-  },
-  {
-    name: 'Dra. Jackeline Lissbeth Flores Hernández',
-    specialty: 'Ginecología Obstetra',
-    image: require('../../assets/images/Dr2.jpg'),
-  },
-];
+import { collection, getDocs, DocumentData } from 'firebase/firestore';
+import { db } from '../../firebase'; // Ajusta la ruta si es necesario
 
 export default function AppointmentScreen() {
   const navigation = useNavigation();
   const [search, setSearch] = useState('');
-  const [selectedDoctor, setSelectedDoctor] = useState<any>(null);
+  const [selectedDoctor, setSelectedDoctor] = useState<DocumentData | null>(null);
   const [selectedDate, setSelectedDate] = useState('');
   const [confirmedAppointments, setConfirmedAppointments] = useState<
     { doctor: string; date: string }[]
   >([]);
+  const [doctors, setDoctors] = useState<DocumentData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchDoctors() {
+      try {
+        const querySnapshot = await getDocs(collection(db, 'doctors'));
+        const docs = querySnapshot.docs.map(doc => doc.data());
+        setDoctors(docs);
+      } catch (error) {
+        console.error('Error fetching doctors:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchDoctors();
+  }, []);
 
   const filteredDoctors = doctors.filter((doctor) =>
     doctor.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -86,22 +81,29 @@ export default function AppointmentScreen() {
             value={search}
             onChangeText={setSearch}
           />
-          {filteredDoctors.map((doctor, index) => (
-            <TouchableOpacity
-              key={index}
-              style={[
-                styles.doctorCard,
-                selectedDoctor?.name === doctor.name && styles.selectedDoctor,
-              ]}
-              onPress={() => setSelectedDoctor(doctor)}
-            >
-              <Image source={doctor.image} style={styles.avatar} />
-              <View>
-                <Text style={styles.name}>{doctor.name}</Text>
-                <Text style={styles.specialty}>{doctor.specialty}</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
+          {loading ? (
+            <Text style={styles.text}>Cargando doctores...</Text>
+          ) : (
+            filteredDoctors.map((doctor, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.doctorCard,
+                  selectedDoctor?.name === doctor.name && styles.selectedDoctor,
+                ]}
+                onPress={() => setSelectedDoctor(doctor)}
+              >
+                {/* Puedes agregar un ícono aquí si quieres */}
+                <View style={styles.avatarPlaceholder}>
+                  <Text style={{ fontSize: 32 }}>👨‍⚕️</Text>
+                </View>
+                <View>
+                  <Text style={styles.name}>{doctor.name}</Text>
+                  <Text style={styles.specialty}>{doctor.specialty}</Text>
+                </View>
+              </TouchableOpacity>
+            ))
+          )}
         </View>
 
         {/* Paso 2: Selección de fecha */}
@@ -223,6 +225,15 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 25,
     marginRight: 12,
+  },
+  avatarPlaceholder: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 12,
+    backgroundColor: '#e0e0e0',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   name: {
     fontSize: 16,
