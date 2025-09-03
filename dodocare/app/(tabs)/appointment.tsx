@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { Calendar } from 'react-native-calendars';
 import { useNavigation } from '@react-navigation/native';
-import { collection, getDocs, DocumentData } from 'firebase/firestore';
+import { collection, getDocs, addDoc, DocumentData, query, orderBy } from 'firebase/firestore';
 import { db } from '../../firebase'; // Ajusta la ruta si es necesario
 
 export default function AppointmentScreen() {
@@ -39,6 +39,26 @@ export default function AppointmentScreen() {
     fetchDoctors();
   }, []);
 
+  useEffect(() => {
+    async function fetchAppointments() {
+      try {
+        const q = query(collection(db, 'appointments'), orderBy('createdAt', 'desc'));
+        const querySnapshot = await getDocs(q);
+        const appointments = querySnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            doctor: data.doctor,
+            date: data.date,
+          };
+        });
+        setConfirmedAppointments(appointments);
+      } catch (error) {
+        console.error('Error fetching appointments:', error);
+      }
+    }
+    fetchAppointments();
+  }, []);
+
   const filteredDoctors = doctors.filter((doctor) =>
     doctor.name.toLowerCase().includes(search.toLowerCase()) ||
     doctor.specialty.toLowerCase().includes(search.toLowerCase())
@@ -48,12 +68,29 @@ export default function AppointmentScreen() {
     setSelectedDate(day.dateString);
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (selectedDoctor && selectedDate) {
-      setConfirmedAppointments((prev) => [
-        ...prev,
-        { doctor: selectedDoctor.name, date: selectedDate },
-      ]);
+      try {
+        await addDoc(collection(db, 'appointments'), {
+          doctor: selectedDoctor.name,
+          specialty: selectedDoctor.specialty,
+          date: selectedDate,
+          createdAt: new Date().toISOString(),
+        });
+        // Recarga las citas desde Firebase
+        const q = query(collection(db, 'appointments'), orderBy('createdAt', 'desc'));
+        const querySnapshot = await getDocs(q);
+        const appointments = querySnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            doctor: data.doctor,
+            date: data.date,
+          };
+        });
+        setConfirmedAppointments(appointments);
+      } catch (error) {
+        console.error('Error guardando la cita en Firebase:', error);
+      }
       setSelectedDoctor(null);
       setSelectedDate('');
       setSearch('');
