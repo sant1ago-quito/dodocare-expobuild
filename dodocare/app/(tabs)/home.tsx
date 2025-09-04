@@ -1,9 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import Background from '../../assets/svg/Background2';
 import { useAuth } from '../AuthContext'; // Asegúrate de que la ruta sea correcta
-import { ScrollView } from 'react-native';
 
 // ✅ Tipo explícito para rutas válidas
 type ValidRoutes =
@@ -21,22 +20,24 @@ export default function Home() {
 
   // ✅ Arreglo tipado con rutas válidas
   const services: { label: string; route: ValidRoutes; restricted?: boolean }[] = [
-  { label: 'Agendar cita', route: '/appointment', restricted: true },
-  { label: 'Historial médico', route: '/history', restricted: true },
-  { label: 'Directorio médico', route: '/directory' },
-  { label: 'Recetas médicas', route: '/prescriptions', restricted: true },
-  { label: 'Incapacidades', route: '/disabilities', restricted: true },
-  { label: 'Información del hospital', route: '/hospital-info', restricted: true },
-];
-  const { isGuest, isLogged } = useAuth();
-  // ✅ Verifica si el usuario es invitado o está logueado
+    { label: 'Agendar cita', route: '/appointment', restricted: true },
+    { label: 'Historial médico', route: '/history', restricted: true },
+    { label: 'Directorio médico', route: '/directory' },
+    { label: 'Recetas médicas', route: '/prescriptions', restricted: true },
+    { label: 'Incapacidades', route: '/disabilities', restricted: true },
+    { label: 'Información del hospital', route: '/hospital-info', restricted: true },
+  ];
+
+  const { isGuest } = useAuth();
+
   return (
     <View style={{ flex: 1 }}>
       <Background style={StyleSheet.absoluteFill} />
-      
+
       <View style={styles.container}>
-        <Image 
-          source={require('@/assets/images/logododo.jpeg')} 
+        {/* Logo */}
+        <Image
+          source={require('@/assets/images/logododo.jpeg')}
           style={styles.logo}
           resizeMode="cover"
         />
@@ -51,9 +52,7 @@ export default function Home() {
             ¡Bienvenido{'\n'}{isGuest ? 'Invitado' : 'Usuario'}!
           </Text>
         </View>
-          
 
-        
         <Text style={styles.subTitle}>Servicios</Text>
 
         {/* ✅ ScrollView para evitar superposición con el footer */}
@@ -61,39 +60,37 @@ export default function Home() {
           contentContainerStyle={{ flexGrow: 1, paddingBottom: 4 }}
           showsVerticalScrollIndicator={false}
         >
-        {/* ✅ Navegación segura con rutas tipadas */}
-        
-        <View style={styles.grid}>
-  {services.map((item, index) => (
-    <TouchableOpacity
-      key={index}
-  activeOpacity={isGuest && item.restricted ? 1 : 0.7}
-  style={[
-    styles.serviceBox,
-    isGuest && item.restricted && { opacity: 0.5 }
-  ]}
-  onPress={() => {
-    if (isGuest && item.restricted) {
-      alert('Debes iniciar sesión para acceder a este servicio.');
-      return;
-    }
-    router.push(item.route);
-  }}
-      
-      
-    >
-      <Text style={styles.boxText}>{item.label}</Text>
-    </TouchableOpacity>
-  ))}
-</View>
+          {/* ✅ Navegación segura con rutas tipadas */}
+          <View style={styles.grid}>
+            {services.map((item, index) => (
+              <TouchableOpacity
+                key={index}
+                activeOpacity={isGuest && item.restricted ? 1 : 0.7}
+                style={[
+                  styles.serviceBox,
+                  isGuest && item.restricted && { opacity: 0.5 },
+                ]}
+                onPress={() => {
+                  if (isGuest && item.restricted) {
+                    alert('Debes iniciar sesión para acceder a este servicio.');
+                    return;
+                  }
+                  router.push(item.route);
+                }}
+              >
+                <Text style={styles.boxText}>{item.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
 
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutText}>SALIR</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <Text style={styles.logoutText}>SALIR</Text>
+          </TouchableOpacity>
         </ScrollView>
       </View>
-      
-      <View style={{ height: 100 }} /> {/* Espacio para evitar superposición con el footer */}
+
+      {/* Espacio vacío para no tapar el footer */}
+      <View style={{ height: 100 }} />
     </View>
   );
 }
@@ -179,28 +176,4 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
   },
-  inviteBox: {
-  backgroundColor: '#e0e7ff',
-  borderRadius: 12,
-  padding: 16,
-  marginBottom: 18,
-  alignItems: 'center',
-},
-inviteText: {
-  color: '#1e293b',
-  fontSize: 15,
-  textAlign: 'center',
-  marginBottom: 8,
-},
-registerButton: {
-  backgroundColor: '#3B82F6',
-  paddingVertical: 8,
-  paddingHorizontal: 24,
-  borderRadius: 8,
-},
-registerButtonText: {
-  color: '#fff',
-  fontWeight: 'bold',
-  fontSize: 15,
-},
 });
