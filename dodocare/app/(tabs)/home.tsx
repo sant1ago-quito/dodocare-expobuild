@@ -4,13 +4,11 @@ import { router } from 'expo-router';
 import Background from '../../assets/svg/Background2';
 import { useAuth } from '../AuthContext'; // Asegúrate de que la ruta sea correcta
 
-// ✅ Tipo explícito para rutas válidas
+// ✅ Tipo explícito solo con las rutas que quieres
 type ValidRoutes =
   | '/appointment'
   | '/history'
   | '/directory'
-  | '/prescriptions'
-  | '/disabilities'
   | '/hospital-info';
 
 export default function Home() {
@@ -18,14 +16,12 @@ export default function Home() {
     router.replace('/login');
   };
 
-  // ✅ Arreglo tipado con rutas válidas
-  const services: { label: string; route: ValidRoutes; restricted?: boolean }[] = [
-    { label: 'Agendar cita', route: '/appointment', restricted: true },
-    { label: 'Historial médico', route: '/history', restricted: true },
-    { label: 'Directorio médico', route: '/directory' },
-    { label: 'Recetas médicas', route: '/prescriptions', restricted: true },
-    { label: 'Incapacidades', route: '/disabilities', restricted: true },
-    { label: 'Información del hospital', route: '/hospital-info', restricted: true },
+  // ✅ Solo las rutas permitidas + iconos
+  const services: { label: string; route: ValidRoutes; restricted?: boolean; icon: any }[] = [
+    { label: 'Agendar cita', route: '/appointment', restricted: true, icon: require('@/assets/images/cita.png') },
+    { label: 'Historial médico', route: '/history', restricted: true, icon: require('@/assets/images/informe-medico.png') },
+    { label: 'Directorio médico', route: '/directory', icon: require('@/assets/images/medico.png') },
+    { label: 'Información del hospital', route: '/hospital-info', restricted: true, icon: require('@/assets/images/informacion.png') },
   ];
 
   const { isGuest } = useAuth();
@@ -78,6 +74,12 @@ export default function Home() {
                   router.push(item.route);
                 }}
               >
+                {/* 👇 Imagen arriba del texto */}
+                <Image
+                  source={item.icon}
+                  style={styles.serviceIcon}
+                  resizeMode="contain"
+                />
                 <Text style={styles.boxText}>{item.label}</Text>
               </TouchableOpacity>
             ))}
@@ -146,7 +148,7 @@ const styles = StyleSheet.create({
   serviceBox: {
     backgroundColor: '#fff',
     width: 140,
-    height: 100,
+    height: 120,
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
@@ -156,6 +158,12 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
+    padding: 10,
+  },
+  serviceIcon: {
+    width: 40,
+    height: 40,
+    marginBottom: 8,
   },
   boxText: {
     fontSize: 14,
@@ -164,7 +172,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   logoutButton: {
-    marginTop: 30,
+    marginTop: 60, // un poco más abajo
     backgroundColor: '#3B82F6',
     paddingVertical: 12,
     paddingHorizontal: 30,
