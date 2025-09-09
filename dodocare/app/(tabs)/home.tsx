@@ -37,9 +37,9 @@ export default function Home() {
       <View style={styles.container}>
         {/* Logo */}
         <Image
-          source={require('@/assets/images/logododo.jpeg')}
+          source={require('@/assets/images/logododocare.png')}
           style={styles.logo}
-          resizeMode="cover"
+          resizeMode="contain"
         />
 
         {/* Bienvenida con ícono */}
@@ -102,8 +102,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
-    width: 100,
-    height: 120,
+    width: 123,
+    height: 123,
     marginBottom: 20,
     alignSelf: 'flex-start',
     borderRadius: 300,

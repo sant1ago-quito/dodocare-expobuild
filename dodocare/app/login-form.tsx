@@ -35,9 +35,9 @@ export default function LoginScreen() {
       >
         <View style={styles.container}>
           <Image 
-            source={require('@/assets/images/logododo.jpeg')} 
+            source={require('@/assets/images/logododocare.png')}
             style={styles.logo}
-            resizeMode="cover"
+            resizeMode="contain"
           />
 
           <Text style={styles.title}>Iniciar Sesión</Text>
@@ -91,8 +91,8 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   logo: {
-    width: 240,
-    height: 280,
+    width: 235,
+    height: 235,
     marginBottom: 80,
     alignSelf: 'flex-start',
     borderRadius: 300,

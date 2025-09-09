@@ -15,7 +15,7 @@ export default function LoginScreen() {
       <View style={styles.whiteBox}>
         <View style={styles.logoContainer}>
           <Image 
-            source={require('@/assets/images/logododo.jpeg')} 
+           source={require('@/assets/images/logododocare.png')}
             style={styles.logo}
             resizeMode="cover"
           />

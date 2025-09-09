@@ -1,49 +1,82 @@
-import React, { createContext, useContext, useState } from 'react';
+// AuthContext.tsx
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { auth } from '../firebase';
-import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { signInWithEmailAndPassword, signOut, onAuthStateChanged, User } from 'firebase/auth';
 
-const AuthContext = createContext({
+type AuthContextType = {
+  user: User | null;
+  isGuest: boolean;
+  isLogged: boolean;
+  login: (email?: string, password?: string) => Promise<void>;
+  loginAsGuest: () => void;
+  logout: () => Promise<void>;
+};
+
+const AuthContext = createContext<AuthContextType>({
+  user: null,
   isGuest: false,
   isLogged: false,
-  login: async (_email?: string, _password?: string) => {},
+  login: async () => {},
   loginAsGuest: () => {},
   logout: async () => {},
 });
 
 export const AuthProvider: React.FC<React.PropsWithChildren<{}>> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
   const [isGuest, setIsGuest] = useState(false);
   const [isLogged, setIsLogged] = useState(false);
+
+  // Mantener sesión activa
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
+        setIsLogged(true);
+        setIsGuest(false);
+      } else {
+        setUser(null);
+        setIsLogged(false);
+        setIsGuest(false);
+      }
+    });
+    return unsubscribe;
+  }, []);
 
   const login = async (email?: string, password?: string) => {
     if (email && password) {
       try {
-        await signInWithEmailAndPassword(auth, email, password);
+        const result = await signInWithEmailAndPassword(auth, email, password);
+        setUser(result.user);
         setIsLogged(true);
         setIsGuest(false);
       } catch (error) {
         setIsLogged(false);
-        throw error; // Lanzar el error para que el formulario lo capture
+        throw error;
       }
     } else {
       throw new Error('Email y contraseña requeridos');
     }
   };
+
   const loginAsGuest = () => {
-    setIsLogged(false);
+    setUser(null);
     setIsGuest(true);
+    setIsLogged(false);
   };
+
   const logout = async () => {
     try {
       await signOut(auth);
     } catch (error) {
-      // Puedes manejar el error aquí
+      console.error("Error cerrando sesión:", error);
     }
+    setUser(null);
     setIsLogged(false);
     setIsGuest(false);
   };
 
   return (
-    <AuthContext.Provider value={{ isGuest, isLogged, login, loginAsGuest, logout }}>
+    <AuthContext.Provider value={{ user, isGuest, isLogged, login, loginAsGuest, logout }}>
       {children}
     </AuthContext.Provider>
   );
@@ -51,13 +84,4 @@ export const AuthProvider: React.FC<React.PropsWithChildren<{}>> = ({ children }
 
 export const useAuth = () => useContext(AuthContext);
 
-// Default export: wrapper component for routing
-const AuthContextScreen: React.FC = () => {
-  return (
-    <AuthProvider>
-      {/* Puedes renderizar children o una pantalla de login aquí si lo deseas */}
-      <></>
-    </AuthProvider>
-  );
-};
-export default AuthContextScreen;
+export default AuthProvider;

@@ -9,10 +9,24 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useAuth } from '../AuthContext'; // 👈 ajusta la ruta si es necesario
 
 export default function ProfileScreen() {
+  const { isGuest } = useAuth();
   const router = useRouter();
 
+  // 🔒 Si es invitado → mostramos restricción
+  if (isGuest) {
+    return (
+      <View style={styles.restrictedContainer}>
+        <Text style={styles.restrictedText}>
+          Esta sección no está disponible para usuarios invitados.
+        </Text>
+      </View>
+    );
+  }
+
+  // ✅ Si es usuario registrado → mostramos perfil
   return (
     <ScrollView
       style={styles.container}
@@ -69,7 +83,7 @@ export default function ProfileScreen() {
   );
 }
 
-// Componente de fila de información
+// 🔹 Componentes reutilizables
 const InfoRow = ({ label, value }: { label: string; value: string }) => (
   <View style={styles.row}>
     <Text style={styles.label}>{label}</Text>
@@ -77,12 +91,10 @@ const InfoRow = ({ label, value }: { label: string; value: string }) => (
   </View>
 );
 
-// Componente de encabezado de sección
 const SectionHeader = ({ title }: { title: string }) => (
   <Text style={styles.sectionTitle}>{title}</Text>
 );
 
-// Componente del ícono de edición
 const EditIcon = ({ onPress }: { onPress: () => void }) => (
   <TouchableOpacity style={styles.editIcon} onPress={onPress}>
     <Ionicons name="create-outline" size={18} color="#1f2a44" />
@@ -144,5 +156,17 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 12,
     right: 12,
+  },
+  restrictedContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#1f2a44',
+    padding: 20,
+  },
+  restrictedText: {
+    color: '#fff',
+    fontSize: 18,
+    textAlign: 'center',
   },
 });
