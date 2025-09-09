@@ -10,8 +10,9 @@ import {
 } from 'react-native';
 import { Calendar } from 'react-native-calendars';
 import { useNavigation } from '@react-navigation/native';
-import { collection, getDocs, addDoc, DocumentData, query, orderBy } from 'firebase/firestore';
-import { db } from '../../firebase'; // Ajusta la ruta si es necesario
+import { collection, getDocs, addDoc, DocumentData, query, orderBy, doc, updateDoc } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
+import { db } from '../../firebase';
 
 export default function AppointmentScreen() {
   const navigation = useNavigation();
@@ -19,10 +20,16 @@ export default function AppointmentScreen() {
   const [selectedDoctor, setSelectedDoctor] = useState<DocumentData | null>(null);
   const [selectedDate, setSelectedDate] = useState('');
   const [confirmedAppointments, setConfirmedAppointments] = useState<
-    { doctor: string; date: string }[]
+    { id: string; doctor: string; date: string; userId: string }[]
   >([]);
   const [doctors, setDoctors] = useState<DocumentData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reschedulingIndex, setReschedulingIndex] = useState<number | null>(null);
+  const [newDate, setNewDate] = useState('');
+
+  // Obtén el usuario autenticado
+  const auth = getAuth();
+  const currentUser = auth.currentUser;
 
   useEffect(() => {
     async function fetchDoctors() {
@@ -41,23 +48,28 @@ export default function AppointmentScreen() {
 
   useEffect(() => {
     async function fetchAppointments() {
+      if (!currentUser) return;
       try {
         const q = query(collection(db, 'appointments'), orderBy('createdAt', 'desc'));
         const querySnapshot = await getDocs(q);
-        const appointments = querySnapshot.docs.map(doc => {
-          const data = doc.data();
-          return {
-            doctor: data.doctor,
-            date: data.date,
-          };
-        });
+        const appointments = querySnapshot.docs
+          .map(doc => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              doctor: data.doctor,
+              date: data.date,
+              userId: data.userId,
+            };
+          })
+          .filter(appt => appt.userId === currentUser.uid); // Solo las del usuario actual
         setConfirmedAppointments(appointments);
       } catch (error) {
         console.error('Error fetching appointments:', error);
       }
     }
     fetchAppointments();
-  }, []);
+  }, [currentUser]);
 
   const filteredDoctors = doctors.filter((doctor) =>
     doctor.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -69,24 +81,29 @@ export default function AppointmentScreen() {
   };
 
   const handleConfirm = async () => {
-    if (selectedDoctor && selectedDate) {
+    if (selectedDoctor && selectedDate && currentUser) {
       try {
         await addDoc(collection(db, 'appointments'), {
           doctor: selectedDoctor.name,
           specialty: selectedDoctor.specialty,
           date: selectedDate,
           createdAt: new Date().toISOString(),
+          userId: currentUser.uid, // Guarda el UID del usuario
         });
         // Recarga las citas desde Firebase
         const q = query(collection(db, 'appointments'), orderBy('createdAt', 'desc'));
         const querySnapshot = await getDocs(q);
-        const appointments = querySnapshot.docs.map(doc => {
-          const data = doc.data();
-          return {
-            doctor: data.doctor,
-            date: data.date,
-          };
-        });
+        const appointments = querySnapshot.docs
+          .map(doc => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              doctor: data.doctor,
+              date: data.date,
+              userId: data.userId,
+            };
+          })
+          .filter(appt => appt.userId === currentUser.uid);
         setConfirmedAppointments(appointments);
       } catch (error) {
         console.error('Error guardando la cita en Firebase:', error);
@@ -99,6 +116,38 @@ export default function AppointmentScreen() {
 
   const handleEmergencyCall = () => {
     Linking.openURL('tel:134');
+  };
+
+  const handleReschedule = (appt: { id: string; doctor: string; date: string; userId: string }, index: number) => {
+    setReschedulingIndex(index);
+    setNewDate('');
+  };
+
+  const confirmReschedule = async (appt: { id: string; doctor: string; date: string; userId: string }) => {
+    try {
+      await updateDoc(doc(db, 'appointments', appt.id), {
+        date: newDate,
+      });
+      // Recarga las citas
+      const q = query(collection(db, 'appointments'), orderBy('createdAt', 'desc'));
+      const querySnapshot = await getDocs(q);
+      const appointments = querySnapshot.docs
+        .map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            doctor: data.doctor,
+            date: data.date,
+            userId: data.userId,
+          };
+        })
+        .filter(appt => appt.userId === currentUser?.uid);
+      setConfirmedAppointments(appointments);
+      setReschedulingIndex(null);
+      setNewDate('');
+    } catch (error) {
+      console.error('Error reprogramando la cita:', error);
+    }
   };
 
   return (
@@ -130,7 +179,6 @@ export default function AppointmentScreen() {
                 ]}
                 onPress={() => setSelectedDoctor(doctor)}
               >
-                {/* Puedes agregar un ícono aquí si quieres */}
                 <View style={styles.avatarPlaceholder}>
                   <Text style={{ fontSize: 32 }}>👨‍⚕️</Text>
                 </View>
@@ -139,9 +187,8 @@ export default function AppointmentScreen() {
                   <Text style={styles.specialty}>{doctor.specialty}</Text>
                 </View>
               </TouchableOpacity>
-            ))
-          )}
-        </View>
+            )))}
+          </View>
 
         {/* Paso 2: Selección de fecha */}
         {selectedDoctor && (
@@ -181,6 +228,36 @@ export default function AppointmentScreen() {
                 <Text style={styles.text}>
                   Fecha: <Text style={{ fontWeight: 'bold' }}>{appt.date}</Text>
                 </Text>
+                <TouchableOpacity
+                  style={{ marginTop: 4, backgroundColor: '#FFC107', borderRadius: 6, padding: 6 }}
+                  onPress={() => handleReschedule(appt, index)}
+                >
+                  <Text style={{ color: '#1f2a44', fontWeight: 'bold' }}>Reprogramar</Text>
+                </TouchableOpacity>
+
+                {reschedulingIndex === index && (
+                  <View>
+                    <Calendar
+                      onDayPress={day => setNewDate(day.dateString)}
+                      markedDates={{
+                        ...(newDate && {
+                          [newDate]: {
+                            selected: true,
+                            selectedColor: '#FF9800',
+                          },
+                        }),
+                      }}
+                      minDate={new Date().toISOString().split('T')[0]}
+                    />
+                    <TouchableOpacity
+                      style={{ marginTop: 8, backgroundColor: '#4CAF50', borderRadius: 6, padding: 8 }}
+                      onPress={() => confirmReschedule(appt)}
+                      disabled={!newDate}
+                    >
+                      <Text style={{ color: '#fff', fontWeight: 'bold' }}>Confirmar nueva fecha</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
               </View>
             ))
           ) : (
@@ -209,7 +286,7 @@ const styles = StyleSheet.create({
     marginTop: 30,
     paddingBottom: 40,
   },
-   emergencyButton: {
+  emergencyButton: {
     position: 'absolute',
     top: 40, // Espacio desde el borde superior
     right: 10,
