@@ -1,28 +1,29 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { router } from 'expo-router';
-import Background from '../../assets/svg/Background2';
-import { useAuth } from '../AuthContext';
+import Background from '../assets/svg/Background2'; // Ruta corregida
+import { useAuth } from './AuthContext'; // Ajusta la ruta si es necesario
 
-type ValidRoutes =
-  | '/appointment'
-  | '/history'
-  | '/directory'
-  | '/hospital-info';
+// ✅ Tipo explícito solo con las rutas que quieres para admin
+type AdminRoutes =
+  | '/manage-doctors'
+  | '/manage-patients'
+  | '/specialties'
+  | '/reports';
 
-export default function Home() {
+export default function AdminHome() {
   const { role, logout } = useAuth();
 
-  const handleLogout = async () => {
-    await logout();
-    router.replace('/login');
+  const handleLogout = () => {
+    logout();
+    router.replace('/login-admin');
   };
 
-  const services: { label: string; route: ValidRoutes; restricted?: boolean; icon: any }[] = [
-    { label: 'Agendar cita', route: '/appointment', restricted: true, icon: require('@/assets/images/cita.png') },
-    { label: 'Historial médico', route: '/history', restricted: true, icon: require('@/assets/images/informe-medico.png') },
-    { label: 'Directorio médico', route: '/directory', icon: require('@/assets/images/medico.png') },
-    { label: 'Información del hospital', route: '/hospital-info', restricted: true, icon: require('@/assets/images/informacion.png') },
+  const services: { label: string; route: AdminRoutes; restricted?: boolean }[] = [
+    { label: 'Gestionar Médicos', route: '/manage-doctors' },
+    { label: 'Gestionar Pacientes', route: '/manage-patients' },
+    { label: 'Especialidades Médicas', route: '/specialties' },
+    { label: 'Reportes', route: '/reports' },
   ];
 
   return (
@@ -32,28 +33,19 @@ export default function Home() {
       <View style={styles.container}>
         {/* Logo */}
         <Image
-          source={require('@/assets/images/logododocare.png')}
+          source={require('../assets/images/logododocare.png')}
           style={styles.logo}
           resizeMode="contain"
         />
 
         {/* Bienvenida */}
         <View style={styles.welcomeCard}>
-          <Image
-            source={require('@/assets/images/WelcomeIcon.png')}
-            style={styles.welcomeIcon}
-          />
           <Text style={styles.welcomeText}>
-            ¡Bienvenido{'\n'}
-            {role === 'guest'
-              ? 'Invitado'
-              : role === 'admin'
-              ? 'Administrador'
-              : 'Usuario'}
+            ¡Bienvenido{'\n'}{role === 'admin' ? 'Administrador' : 'Usuario'}!
           </Text>
         </View>
 
-        <Text style={styles.subTitle}>Servicios</Text>
+        <Text style={styles.subTitle}>Panel de Administración</Text>
 
         <ScrollView
           contentContainerStyle={{ flexGrow: 1, paddingBottom: 4 }}
@@ -63,24 +55,10 @@ export default function Home() {
             {services.map((item, index) => (
               <TouchableOpacity
                 key={index}
-                activeOpacity={role !== 'guest' || !item.restricted ? 0.7 : 1}
-                style={[
-                  styles.serviceBox,
-                  role === 'guest' && item.restricted && { opacity: 0.5 },
-                ]}
-                onPress={() => {
-                  if (role === 'guest' && item.restricted) {
-                    alert('Debes iniciar sesión para acceder a este servicio.');
-                    return;
-                  }
-                  router.push(item.route);
-                }}
+                style={styles.serviceBox}
+                onPress={() => router.push(item.route as any)}
+
               >
-                <Image
-                  source={item.icon}
-                  style={styles.serviceIcon}
-                  resizeMode="contain"
-                />
                 <Text style={styles.boxText}>{item.label}</Text>
               </TouchableOpacity>
             ))}
@@ -113,24 +91,19 @@ const styles = StyleSheet.create({
     borderColor: '#ffffff',
   },
   welcomeCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: '#fff',
     padding: 12,
     borderRadius: 20,
     marginBottom: 20,
     alignSelf: 'center',
     paddingHorizontal: 16,
-  },
-  welcomeIcon: {
-    width: 40,
-    height: 40,
-    marginRight: 12,
+    alignItems: 'center',
   },
   welcomeText: {
     fontSize: 22,
     fontWeight: 'bold',
     color: '#000',
+    textAlign: 'center',
     lineHeight: 22,
   },
   subTitle: {
@@ -159,11 +132,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
     padding: 10,
-  },
-  serviceIcon: {
-    width: 40,
-    height: 40,
-    marginBottom: 8,
   },
   boxText: {
     fontSize: 14,

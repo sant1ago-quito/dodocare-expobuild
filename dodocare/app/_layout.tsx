@@ -19,62 +19,66 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        {/* Pantalla de redirección inicial (index.tsx) */}
-        <Stack.Screen 
-          name="index" 
-          options={{ 
+        <Stack
+          screenOptions={{
             headerShown: false,
-            animation: 'fade' 
-          }} 
-        />
+          }}
+        >
+          {/* Pantalla de redirección inicial (index.tsx) */}
+          <Stack.Screen
+            name="index"
+            options={{
+              headerShown: false,
+              animation: 'fade',
+            }}
+          />
 
-        {/* Pantalla principal con botones (login.tsx) */}
-        <Stack.Screen 
-          name="login" 
-          options={{ 
-            headerShown: false,
-            animation: 'slide_from_right'
-          }} 
-        />
+          {/* Pantalla principal con botones (login.tsx) */}
+          <Stack.Screen
+            name="login"
+            options={{
+              headerShown: false,
+              animation: 'slide_from_right',
+            }}
+          />
 
-        {/* Formulario de inicio de sesión */}
-        <Stack.Screen 
-          name="login-form" 
-          options={{ 
-            headerShown: false,
-            presentation: 'modal',
-            animation: 'slide_from_bottom'
-          }} 
-        />
+          {/* Formulario de inicio de sesión */}
+          <Stack.Screen
+            name="login-form"
+            options={{
+              headerShown: false,
+              presentation: 'modal',
+              animation: 'slide_from_bottom',
+            }}
+          />
 
-        {/* Pantalla de registro */}
-        <Stack.Screen 
-          name="register" 
-          options={{ 
-            headerShown: false,
-            animation: 'slide_from_right'
-          }} 
-        />
+          {/* Pantalla de registro */}
+          <Stack.Screen
+            name="register"
+            options={{
+              headerShown: false,
+              animation: 'slide_from_right',
+            }}
+          />
 
-        {/* Área principal después del login */}
-        <Stack.Screen 
-          name="(tabs)" 
-          options={{ 
-            headerShown: false,
-            animation: 'fade'
-          }} 
-        />
+          {/* Área principal después del login */}
+          <Stack.Screen
+            name="(tabs)"
+            options={{
+              headerShown: false,
+              animation: 'fade',
+            }}
+          />
 
-        {/* Pantalla 404 */}
-        <Stack.Screen 
-          name="+not-found" 
-          options={{ 
-            headerShown: false 
-          }} 
-        />
-      </Stack>
-      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+          {/* Pantalla 404 */}
+          <Stack.Screen
+            name="+not-found"
+            options={{
+              headerShown: false,
+            }}
+          />
+        </Stack>
+        <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
       </ThemeProvider>
     </AuthProvider>
   );

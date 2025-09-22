@@ -12,11 +12,11 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '../AuthContext'; // 👈 ajusta la ruta si es necesario
 
 export default function ProfileScreen() {
-  const { isGuest } = useAuth();
+  const { role} = useAuth();
   const router = useRouter();
 
   // 🔒 Si es invitado → mostramos restricción
-  if (isGuest) {
+  if (role) {
     return (
       <View style={styles.restrictedContainer}>
         <Text style={styles.restrictedText}>

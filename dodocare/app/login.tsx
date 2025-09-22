@@ -8,14 +8,13 @@ export default function LoginScreen() {
   return (
     <View style={styles.container}>
       {/* Fondo superior */}
-      <View style={styles.topBackground}>
-      </View>
+      <View style={styles.topBackground} />
 
       {/* Cuadro blanco con el logo y los botones */}
       <View style={styles.whiteBox}>
         <View style={styles.logoContainer}>
           <Image 
-           source={require('@/assets/images/logododocare.png')}
+            source={require('../assets/images/logododocare.png')} 
             style={styles.logo}
             resizeMode="cover"
           />
@@ -36,6 +35,14 @@ export default function LoginScreen() {
         >
           <Text style={styles.buttonText}>Crear Cuenta</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.adminButton}
+          onPress={() => router.push('/login-admin')}
+        >
+          <Text style={styles.adminButtonText}>Ingresar como Admin</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity 
           style={styles.guestButton}
           onPress={() => {
@@ -47,11 +54,9 @@ export default function LoginScreen() {
         </TouchableOpacity>
       </View>
     </View>
-
   );
 }
 
-// Definición completa del objeto styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -67,11 +72,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  title: {
-    color: "#1f2a44",
-    fontSize: 22,
-    fontWeight: "bold",
-  },
   whiteBox: {
     backgroundColor: "white",
     width: "90%",
@@ -79,13 +79,12 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     alignItems: "center",
     marginTop: -50, // Superpone el cuadro sobre el fondo superior
-    elevation: 5, // Sombra en Android
-    shadowColor: "#000", // Sombra en iOS
+    elevation: 5, 
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 5,
   },
-
   logoContainer: {
     width: 150,
     height: 150,
@@ -121,7 +120,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 15,
   },
+  adminButton: {
+    backgroundColor: '#8B5CF6',
+    padding: 16,
+    borderRadius: 10,
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
   buttonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  adminButtonText: {
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 16,

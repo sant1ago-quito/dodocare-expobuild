@@ -3,85 +3,97 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { auth } from '../firebase';
 import { signInWithEmailAndPassword, signOut, onAuthStateChanged, User } from 'firebase/auth';
 
-type AuthContextType = {
+export type Role = 'guest' | 'user' | 'admin';
+
+export type AuthContextType = {
   user: User | null;
-  isGuest: boolean;
+  role: Role;
   isLogged: boolean;
-  login: (email?: string, password?: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
+  loginAdmin: (email: string, password: string) => Promise<boolean>;
   loginAsGuest: () => void;
   logout: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
-  isGuest: false,
+  role: 'guest',
   isLogged: false,
   login: async () => {},
+  loginAdmin: async () => false,
   loginAsGuest: () => {},
   logout: async () => {},
 });
 
 export const AuthProvider: React.FC<React.PropsWithChildren<{}>> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isGuest, setIsGuest] = useState(false);
+  const [role, setRole] = useState<Role>('guest');
   const [isLogged, setIsLogged] = useState(false);
 
-  // Mantener sesión activa
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
+        setRole('user'); // Usuario normal por defecto
         setIsLogged(true);
-        setIsGuest(false);
       } else {
         setUser(null);
+        setRole('guest');
         setIsLogged(false);
-        setIsGuest(false);
       }
     });
     return unsubscribe;
   }, []);
 
-  const login = async (email?: string, password?: string) => {
-    if (email && password) {
-      try {
-        const result = await signInWithEmailAndPassword(auth, email, password);
-        setUser(result.user);
-        setIsLogged(true);
-        setIsGuest(false);
-      } catch (error) {
-        setIsLogged(false);
-        throw error;
-      }
-    } else {
-      throw new Error('Email y contraseña requeridos');
+  // Login usuario normal
+  const login = async (email: string, password: string) => {
+    try {
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      setUser(result.user);
+      setRole('user');
+      setIsLogged(true);
+    } catch (error) {
+      setIsLogged(false);
+      throw error;
     }
   };
 
+  // Login admin
+  const loginAdmin = async (email: string, password: string) => {
+    if (email === 'cristian503md5@gmail.com' && password === '123456') {
+      setUser({} as User); // Simulación de usuario admin
+      setRole('admin');
+      setIsLogged(true);
+      return true;
+    }
+    return false;
+  };
+
+  // Login invitado
   const loginAsGuest = () => {
     setUser(null);
-    setIsGuest(true);
+    setRole('guest');
     setIsLogged(false);
   };
 
+  // Logout
   const logout = async () => {
     try {
       await signOut(auth);
     } catch (error) {
-      console.error("Error cerrando sesión:", error);
+      console.error('Error cerrando sesión:', error);
     }
     setUser(null);
+    setRole('guest');
     setIsLogged(false);
-    setIsGuest(false);
   };
 
   return (
-    <AuthContext.Provider value={{ user, isGuest, isLogged, login, loginAsGuest, logout }}>
+    <AuthContext.Provider value={{ user, role, isLogged, login, loginAdmin, loginAsGuest, logout }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
 export const useAuth = () => useContext(AuthContext);
-
 export default AuthProvider;
