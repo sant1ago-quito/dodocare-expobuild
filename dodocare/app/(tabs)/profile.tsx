@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -10,13 +10,18 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../AuthContext'; // 👈 ajusta la ruta si es necesario
+import { getAuth } from 'firebase/auth';
 
 export default function ProfileScreen() {
-  const { role} = useAuth();
+  // TODOS los hooks aquí, nada de returns antes
+  const { role } = useAuth();
   const router = useRouter();
+  const auth = getAuth();
+  const currentUser = auth.currentUser;
+  const [search, setSearch] = useState('');
 
-  // 🔒 Si es invitado → mostramos restricción
-  if (role) {
+  // Solo bloquea si es invitado
+  if (role === 'guest') {
     return (
       <View style={styles.restrictedContainer}>
         <Text style={styles.restrictedText}>

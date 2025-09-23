@@ -32,6 +32,7 @@ type Appointment = {
 };
 
 export default function AppointmentScreen() {
+  // TODOS los hooks aquí, nada de returns antes
   const { role } = useAuth();
   const navigation = useNavigation();
   const auth = getAuth();
@@ -45,17 +46,6 @@ export default function AppointmentScreen() {
   const [loading, setLoading] = useState(true);
   const [reschedulingIndex, setReschedulingIndex] = useState<number | null>(null);
   const [newDate, setNewDate] = useState('');
-
-  // 🔒 Bloqueo para invitados
-  if (role === 'guest') {
-    return (
-      <View style={styles.restrictedContainer}>
-        <Text style={styles.restrictedText}>
-          Esta sección no está disponible para usuarios invitados.
-        </Text>
-      </View>
-    );
-  }
 
   // Fetch doctors
   useEffect(() => {
@@ -185,6 +175,17 @@ export default function AppointmentScreen() {
       console.error('Error reprogramando la cita:', error);
     }
   };
+
+  // SOLO aquí, después de todos los hooks:
+  if (role === 'guest') {
+    return (
+      <View style={styles.restrictedContainer}>
+        <Text style={styles.restrictedText}>
+          Esta sección no está disponible para usuarios invitados.
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.outerContainer}>

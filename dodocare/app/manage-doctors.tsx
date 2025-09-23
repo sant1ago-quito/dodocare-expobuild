@@ -8,6 +8,7 @@ type Doctor = {
   name: string;
   specialty: string;
   email: string;
+  address: string;
   numero?: number;
 };
 
@@ -15,6 +16,7 @@ export default function ManageDoctorsScreen() {
   const [nombre, setNombre] = useState('');
   const [especialidad, setEspecialidad] = useState('');
   const [email, setEmail] = useState('');
+  const [address, setAddress] = useState('');
   const [doctores, setDoctores] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -31,6 +33,7 @@ export default function ManageDoctorsScreen() {
           name: data.name ?? data.nombre ?? 'Nombre no disponible',
           specialty: data.specialty ?? data.especialidad ?? 'Especialidad no disponible',
           email: data.email ?? '',
+          address: data.address ?? '',
           numero: data.numero,
         });
       });
@@ -40,9 +43,18 @@ export default function ManageDoctorsScreen() {
     fetchDoctors();
   }, []);
 
+  // Validación de email
+  const isValidEmail = (email: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
   const agregarDoctor = async () => {
-    if (!nombre || !especialidad || !email) {
+    if (!nombre || !especialidad || !email || !address) {
       Alert.alert('Completa todos los campos');
+      return;
+    }
+    if (!isValidEmail(email)) {
+      Alert.alert('Por favor ingresa un correo electrónico válido');
       return;
     }
     try {
@@ -62,24 +74,39 @@ export default function ManageDoctorsScreen() {
         name: nombre,
         specialty: especialidad,
         email,
+        address,
         numero: nuevoNumero,
       });
-      setDoctores([...doctores, { id: docRef.id, name: nombre, specialty: especialidad, email, numero: nuevoNumero }]);
+      setDoctores([...doctores, { id: docRef.id, name: nombre, specialty: especialidad, email, address, numero: nuevoNumero }]);
       setNombre('');
       setEspecialidad('');
       setEmail('');
+      setAddress('');
     } catch (error) {
       Alert.alert('Error al agregar médico');
     }
   };
 
-  const eliminarDoctor = async (id: string) => {
-    try {
-      await deleteDoc(doc(db, 'doctors', id));
-      setDoctores(doctores.filter(doc => doc.id !== id));
-    } catch (error) {
-      Alert.alert('Error al eliminar médico');
-    }
+  const eliminarDoctor = (id: string) => {
+    Alert.alert(
+      'Confirmar eliminación',
+      '¿Estás seguro de que deseas eliminar este médico?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteDoc(doc(db, 'doctors', id));
+              setDoctores(doctores.filter(doc => doc.id !== id));
+            } catch (error) {
+              Alert.alert('Error al eliminar médico');
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -100,10 +127,17 @@ export default function ManageDoctorsScreen() {
         />
         <TextInput
           style={styles.input}
-          placeholder="Email"
+          placeholder="Correo electrónico"
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
+          autoCapitalize="none"
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Dirección del consultorio"
+          value={address}
+          onChangeText={setAddress}
         />
         <TouchableOpacity style={styles.addButton} onPress={agregarDoctor}>
           <Text style={styles.addButtonText}>Agregar Médico</Text>
@@ -124,6 +158,7 @@ export default function ManageDoctorsScreen() {
               <Text style={styles.doctorName}>{item.name}</Text>
               <Text style={styles.doctorInfo}>Especialidad: {item.specialty}</Text>
               <Text style={styles.doctorInfo}>Email: {item.email}</Text>
+              <Text style={styles.doctorInfo}>Dirección: {item.address}</Text>
             </View>
             <TouchableOpacity onPress={() => eliminarDoctor(item.id)} style={styles.deleteButton}>
               <Text style={styles.deleteButtonText}>Eliminar</Text>

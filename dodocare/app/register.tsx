@@ -4,14 +4,17 @@ import { router } from 'expo-router';
 import Background from '../assets/svg/Background';
 import { auth } from '../firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { setDoc, doc } from 'firebase/firestore';
+import { db } from '../firebase';
 
 export default function Register() {
-  const [Nombre, setNombre] = useState('');
+  const [nombre, setNombre] = useState('');
   const [correo, setCorreo] = useState('');
   const [contrasena, setContrasena] = useState('');
+  const [telefono, setTelefono] = useState(''); // Nuevo estado para teléfono
 
   const InsertarUsuario = async () => {
-    if (!Nombre || !correo || !contrasena) {
+    if (!nombre || !correo || !contrasena || !telefono) {
       Alert.alert('Error', 'Por favor, completa todos los campos.');
       return;
     }
@@ -20,7 +23,18 @@ export default function Register() {
       return;
     }
     try {
-      await createUserWithEmailAndPassword(auth, correo, contrasena);
+      // 1. Crea el usuario en Auth
+      const userCredential = await createUserWithEmailAndPassword(auth, correo, contrasena);
+      const user = userCredential.user;
+
+      // 2. Crea el documento en Firestore
+      await setDoc(doc(db, 'pacientes', user.uid), {
+        email: user.email,
+        nombre: nombre,
+        telefono: telefono, // Guarda el teléfono
+        role: 'user',
+      });
+
       Alert.alert('Éxito', 'Usuario registrado correctamente.');
       router.push('/login-form');
     } catch (error: any) {
@@ -31,7 +45,7 @@ export default function Register() {
     <KeyboardAvoidingView
       style={{ flex: 1 }}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={60} // Ajusta este valor según tu header
+      keyboardVerticalOffset={60}
     >
       <View style={{ flex: 1 }}>
         <Background style={StyleSheet.absoluteFill} />
@@ -48,24 +62,33 @@ export default function Register() {
           {/* Campos del formulario */}
           <TextInput
             placeholder="Nombre"
+            value={nombre}
+            onChangeText={setNombre}
             style={styles.input}
             placeholderTextColor="#999"
-            onChangeText={setNombre}
           />
-          
           <TextInput
             placeholder="Correo electrónico"
             style={styles.input}
             placeholderTextColor="#999"
             keyboardType="email-address"
+            value={correo}
             onChangeText={setCorreo}
           />
-          
+          <TextInput
+            placeholder="Teléfono"
+            style={styles.input}
+            placeholderTextColor="#999"
+            keyboardType="phone-pad"
+            value={telefono}
+            onChangeText={setTelefono}
+          />
           <TextInput
             placeholder="Contraseña"
             style={styles.input}
             placeholderTextColor="#999"
             secureTextEntry
+            value={contrasena}
             onChangeText={setContrasena}
           />
           <TouchableOpacity style={styles.backButton}
@@ -79,7 +102,7 @@ export default function Register() {
 
           <TouchableOpacity 
             style={styles.backButton}
-            onPress={() => router.replace('/login')} // Cambiado a replace
+            onPress={() => router.replace('/login')}
           >
             <Text style={styles.backButtonText}>Volver al inicio</Text>
           </TouchableOpacity>

@@ -33,10 +33,23 @@ export const AuthProvider: React.FC<React.PropsWithChildren<{}>> = ({ children }
   const [isLogged, setIsLogged] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
-        setRole('user'); // Usuario normal por defecto
+        // Buscar el rol en Firestore
+        try {
+          const userDoc = await getDoc(doc(db, 'pacientes', currentUser.uid));
+          if (userDoc.exists()) {
+            const data = userDoc.data();
+            let role = data.role;
+            if (role === 'invitado') role = 'guest';
+            setRole(role as Role);
+          } else {
+            setRole('user');
+          }
+        } catch (error) {
+          setRole('user');
+        }
         setIsLogged(true);
       } else {
         setUser(null);
