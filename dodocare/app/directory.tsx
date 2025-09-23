@@ -6,25 +6,34 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
-  Image,
-  Linking,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { collection, getDocs, DocumentData } from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 
 export default function DirectoryScreen() {
   const navigation = useNavigation();
   const [search, setSearch] = useState('');
-  const [doctors, setDoctors] = useState<DocumentData[]>([]);
+  const [doctors, setDoctors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchDoctors() {
       try {
         const querySnapshot = await getDocs(collection(db, 'doctors'));
-        const docs = querySnapshot.docs.map(doc => doc.data());
+        const docs = querySnapshot.docs.map(docSnap => {
+          const data = docSnap.data();
+          return {
+            id: docSnap.id,
+            name: data.name ?? data.nombre ?? '',
+            specialty: data.specialty ?? data.especialidad ?? '',
+            address: data.address ?? '',
+            email: data.email ?? '',
+            numero: data.numero,
+          };
+        });
         setDoctors(docs);
       } catch (error) {
         console.error('Error fetching doctors:', error);
@@ -40,8 +49,8 @@ export default function DirectoryScreen() {
   };
 
   const filteredDoctors = doctors.filter((doctor) =>
-    doctor.name.toLowerCase().includes(search.toLowerCase()) ||
-    doctor.specialty.toLowerCase().includes(search.toLowerCase())
+    (doctor.name ?? '').toLowerCase().includes(search.toLowerCase()) ||
+    (doctor.specialty ?? '').toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -69,8 +78,7 @@ export default function DirectoryScreen() {
         ) : (
           /* Lista de doctores */
           filteredDoctors.map((doctor, index) => (
-            <View key={index} style={styles.card}>
-              {/* Si quieres mostrar un ícono genérico, puedes usar un emoji o un componente de íconos */}
+            <View key={doctor.id ?? index} style={styles.card}>
               <View style={styles.avatarPlaceholder}>
                 <Text style={{ fontSize: 32 }}>👨‍⚕️</Text>
               </View>
@@ -138,12 +146,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
-  },
-  avatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    marginRight: 12,
   },
   avatarPlaceholder: {
     width: 64,

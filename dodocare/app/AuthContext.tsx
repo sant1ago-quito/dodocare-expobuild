@@ -2,6 +2,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { auth } from '../firebase';
 import { signInWithEmailAndPassword, signOut, onAuthStateChanged, User } from 'firebase/auth';
+import { getDoc, doc } from 'firebase/firestore';
+import { db } from '../firebase'; // Asegúrate de importar tu db
 
 export type Role = 'guest' | 'user' | 'admin';
 
@@ -50,7 +52,18 @@ export const AuthProvider: React.FC<React.PropsWithChildren<{}>> = ({ children }
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
       setUser(result.user);
-      setRole('user');
+
+      // Buscar el rol en Firestore
+      const userDoc = await getDoc(doc(db, 'pacientes', result.user.uid));
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        let role = data.role;
+        if (role === 'invitado') role = 'guest'; // Traduce 'invitado' a 'guest'
+        setRole(role as Role);
+      } else {
+        setRole('user'); // Por defecto si no existe el documento
+      }
+
       setIsLogged(true);
     } catch (error) {
       setIsLogged(false);

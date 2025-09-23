@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Alert } from 'react-native';
-import { db } from '../firebase'; // Asegúrate que la ruta sea correcta
+import { db } from '../firebase';
 import { collection, addDoc, getDocs, deleteDoc, doc } from 'firebase/firestore';
 
 type Doctor = {
   id: string;
-  nombre: string;
-  especialidad: string;
+  name: string;
+  specialty: string;
   email: string;
+  numero?: number;
 };
 
 export default function ManageDoctorsScreen() {
@@ -24,7 +25,14 @@ export default function ManageDoctorsScreen() {
       const querySnapshot = await getDocs(collection(db, 'doctors'));
       const docs: Doctor[] = [];
       querySnapshot.forEach((docSnap) => {
-        docs.push({ id: docSnap.id, ...docSnap.data() } as Doctor);
+        const data = docSnap.data();
+        docs.push({
+          id: docSnap.id,
+          name: data.name ?? data.nombre ?? 'Nombre no disponible',
+          specialty: data.specialty ?? data.especialidad ?? 'Especialidad no disponible',
+          email: data.email ?? '',
+          numero: data.numero,
+        });
       });
       setDoctores(docs);
       setLoading(false);
@@ -38,12 +46,25 @@ export default function ManageDoctorsScreen() {
       return;
     }
     try {
-      const docRef = await addDoc(collection(db, 'doctors'), {
-        nombre,
-        especialidad,
-        email,
+      // Leer todos los médicos para encontrar el mayor número
+      const querySnapshot = await getDocs(collection(db, 'doctors'));
+      let maxNumero = 0;
+      querySnapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        if (data.numero && data.numero > maxNumero) {
+          maxNumero = data.numero;
+        }
       });
-      setDoctores([...doctores, { id: docRef.id, nombre, especialidad, email }]);
+      const nuevoNumero = maxNumero + 1;
+
+      // Guarda los campos en inglés para compatibilidad
+      const docRef = await addDoc(collection(db, 'doctors'), {
+        name: nombre,
+        specialty: especialidad,
+        email,
+        numero: nuevoNumero,
+      });
+      setDoctores([...doctores, { id: docRef.id, name: nombre, specialty: especialidad, email, numero: nuevoNumero }]);
       setNombre('');
       setEspecialidad('');
       setEmail('');
@@ -100,8 +121,8 @@ export default function ManageDoctorsScreen() {
         renderItem={({ item }) => (
           <View style={styles.doctorCard}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.doctorName}>{item.nombre}</Text>
-              <Text style={styles.doctorInfo}>Especialidad: {item.especialidad}</Text>
+              <Text style={styles.doctorName}>{item.name}</Text>
+              <Text style={styles.doctorInfo}>Especialidad: {item.specialty}</Text>
               <Text style={styles.doctorInfo}>Email: {item.email}</Text>
             </View>
             <TouchableOpacity onPress={() => eliminarDoctor(item.id)} style={styles.deleteButton}>

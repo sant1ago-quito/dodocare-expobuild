@@ -32,7 +32,7 @@ type Appointment = {
 };
 
 export default function AppointmentScreen() {
-  const { isGuest } = useAuth();
+  const { role } = useAuth();
   const navigation = useNavigation();
   const auth = getAuth();
   const currentUser = auth.currentUser;
@@ -47,7 +47,7 @@ export default function AppointmentScreen() {
   const [newDate, setNewDate] = useState('');
 
   // 🔒 Bloqueo para invitados
-  if (isGuest) {
+  if (role === 'guest') {
     return (
       <View style={styles.restrictedContainer}>
         <Text style={styles.restrictedText}>
@@ -62,7 +62,15 @@ export default function AppointmentScreen() {
     const fetchDoctors = async () => {
       try {
         const querySnapshot = await getDocs(collection(db, 'doctors'));
-        const docs = querySnapshot.docs.map(doc => doc.data());
+        const docs = querySnapshot.docs.map(docSnap => {
+          const data = docSnap.data();
+          return {
+            id: docSnap.id,
+            name: data.name ?? data.nombre ?? '',
+            specialty: data.specialty ?? data.especialidad ?? '',
+            email: data.email ?? '',
+          };
+        });
         setDoctors(docs);
       } catch (error) {
         console.error('Error fetching doctors:', error);
