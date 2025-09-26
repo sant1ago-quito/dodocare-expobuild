@@ -6,7 +6,8 @@ import { collection, getDocs } from 'firebase/firestore';
 type Doctor = {
   id: string;
   nombre: string;
-  especialidad: string;
+  especialidad?: string; // español, opcional
+  specialty?: string;    // inglés, opcional (el que usas en Firestore)
   email: string;
   numero?: number;
 };
@@ -25,8 +26,9 @@ export default function ReportsScreen() {
       querySnapshot.forEach((docSnap) => {
         const data = docSnap.data() as Doctor;
         docs.push({ ...data, id: docSnap.id });
-        if (data.especialidad) {
-          especialidadCount[data.especialidad] = (especialidadCount[data.especialidad] || 0) + 1;
+        if (data.specialty) {
+          const key = data.specialty.trim().toLowerCase(); // Normaliza
+          especialidadCount[key] = (especialidadCount[key] || 0) + 1;
         }
       });
       setDoctores(docs);

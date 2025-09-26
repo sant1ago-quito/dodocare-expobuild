@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Alert } from 'react-native';
 import { db } from '../firebase';
-import { collection, addDoc, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 
 type Doctor = {
   id: string;
@@ -19,6 +19,7 @@ export default function ManageDoctorsScreen() {
   const [address, setAddress] = useState('');
   const [doctores, setDoctores] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   // Leer médicos al iniciar
   useEffect(() => {
@@ -48,6 +49,14 @@ export default function ManageDoctorsScreen() {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
 
+  const resetForm = () => {
+    setNombre('');
+    setEspecialidad('');
+    setEmail('');
+    setAddress('');
+    setEditingId(null);
+  };
+
   const agregarDoctor = async () => {
     if (!nombre || !especialidad || !email || !address) {
       Alert.alert('Completa todos los campos');
@@ -58,32 +67,44 @@ export default function ManageDoctorsScreen() {
       return;
     }
     try {
-      // Leer todos los médicos para encontrar el mayor número
-      const querySnapshot = await getDocs(collection(db, 'doctors'));
-      let maxNumero = 0;
-      querySnapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        if (data.numero && data.numero > maxNumero) {
-          maxNumero = data.numero;
-        }
-      });
-      const nuevoNumero = maxNumero + 1;
+      if (editingId) {
+        // Editar médico existente
+        await updateDoc(doc(db, 'doctors', editingId), {
+          name: nombre,
+          specialty: especialidad,
+          email,
+          address,
+        });
+        setDoctores(doctores.map(doc =>
+          doc.id === editingId
+            ? { ...doc, name: nombre, specialty: especialidad, email, address }
+            : doc
+        ));
+        resetForm();
+      } else {
+        // Agregar nuevo médico
+        const querySnapshot = await getDocs(collection(db, 'doctors'));
+        let maxNumero = 0;
+        querySnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          if (data.numero && data.numero > maxNumero) {
+            maxNumero = data.numero;
+          }
+        });
+        const nuevoNumero = maxNumero + 1;
 
-      // Guarda los campos en inglés para compatibilidad
-      const docRef = await addDoc(collection(db, 'doctors'), {
-        name: nombre,
-        specialty: especialidad,
-        email,
-        address,
-        numero: nuevoNumero,
-      });
-      setDoctores([...doctores, { id: docRef.id, name: nombre, specialty: especialidad, email, address, numero: nuevoNumero }]);
-      setNombre('');
-      setEspecialidad('');
-      setEmail('');
-      setAddress('');
+        const docRef = await addDoc(collection(db, 'doctors'), {
+          name: nombre,
+          specialty: especialidad,
+          email,
+          address,
+          numero: nuevoNumero,
+        });
+        setDoctores([...doctores, { id: docRef.id, name: nombre, specialty: especialidad, email, address, numero: nuevoNumero }]);
+        resetForm();
+      }
     } catch (error) {
-      Alert.alert('Error al agregar médico');
+      Alert.alert('Error al guardar médico');
     }
   };
 
@@ -100,6 +121,7 @@ export default function ManageDoctorsScreen() {
             try {
               await deleteDoc(doc(db, 'doctors', id));
               setDoctores(doctores.filter(doc => doc.id !== id));
+              if (editingId === id) resetForm();
             } catch (error) {
               Alert.alert('Error al eliminar médico');
             }
@@ -107,6 +129,14 @@ export default function ManageDoctorsScreen() {
         },
       ]
     );
+  };
+
+  const editarDoctor = (doctor: Doctor) => {
+    setNombre(doctor.name);
+    setEspecialidad(doctor.specialty);
+    setEmail(doctor.email);
+    setAddress(doctor.address);
+    setEditingId(doctor.id);
   };
 
   return (
@@ -140,8 +170,15 @@ export default function ManageDoctorsScreen() {
           onChangeText={setAddress}
         />
         <TouchableOpacity style={styles.addButton} onPress={agregarDoctor}>
-          <Text style={styles.addButtonText}>Agregar Médico</Text>
+          <Text style={styles.addButtonText}>
+            {editingId ? 'Guardar Cambios' : 'Agregar Médico'}
+          </Text>
         </TouchableOpacity>
+        {editingId && (
+          <TouchableOpacity style={[styles.addButton, { backgroundColor: '#aaa', marginTop: 8 }]} onPress={resetForm}>
+            <Text style={styles.addButtonText}>Cancelar</Text>
+          </TouchableOpacity>
+        )}
       </View>
       <FlatList
         data={doctores}
@@ -160,9 +197,14 @@ export default function ManageDoctorsScreen() {
               <Text style={styles.doctorInfo}>Email: {item.email}</Text>
               <Text style={styles.doctorInfo}>Dirección: {item.address}</Text>
             </View>
-            <TouchableOpacity onPress={() => eliminarDoctor(item.id)} style={styles.deleteButton}>
-              <Text style={styles.deleteButtonText}>Eliminar</Text>
-            </TouchableOpacity>
+            <View>
+              <TouchableOpacity onPress={() => editarDoctor(item)} style={[styles.deleteButton, { backgroundColor: '#3B82F6', marginBottom: 6 }]}>
+                <Text style={styles.deleteButtonText}>Editar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => eliminarDoctor(item.id)} style={styles.deleteButton}>
+                <Text style={styles.deleteButtonText}>Eliminar</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
       />

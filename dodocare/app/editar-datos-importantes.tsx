@@ -1,5 +1,5 @@
 // app/editar-datos-importantes.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,28 +7,80 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { getAuth } from 'firebase/auth';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { db } from '../firebase';
+import { Picker } from '@react-native-picker/picker';
 
 export default function EditarDatosImportantes() {
+  const [nombre, setNombre] = useState('');
   const [dui, setDui] = useState('');
   const [fechaNacimiento, setFechaNacimiento] = useState('');
   const [sexo, setSexo] = useState('');
+  const [loading, setLoading] = useState(true);
 
   const router = useRouter();
+  const auth = getAuth();
+  const user = auth.currentUser;
+
+  useEffect(() => {
+    const cargarDatos = async () => {
+      if (user) {
+        const docRef = doc(db, 'pacientes', user.uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setNombre(data.nombre || '');
+          setDui(data.dui || '');
+          setFechaNacimiento(data.fechaNacimiento || '');
+          setSexo(data.sexo || '');
+        }
+      }
+      setLoading(false);
+    };
+    cargarDatos();
+  }, [user]);
+
+  const guardarDatos = async () => {
+    if (!user) return;
+    try {
+      const docRef = doc(db, 'pacientes', user.uid);
+      await updateDoc(docRef, {
+        nombre,
+        dui,
+        fechaNacimiento,
+        sexo,
+      });
+      Alert.alert('Éxito', 'Datos guardados correctamente');
+      router.back();
+    } catch (e) {
+      Alert.alert('Error', 'No se pudieron guardar los datos');
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.name}>Cargando...</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Ionicons name="person-circle-outline" size={64} color="#1f2a44" />
-        <Text style={styles.name}>Javier Alejandro{"\n"}Rivas Perla</Text>
+        <Text style={styles.name}>{nombre}</Text>
       </View>
 
       <View style={styles.card}>
         <View style={styles.cardHeader}>
           <Text style={styles.sectionTitle}>Datos Importantes</Text>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={guardarDatos}>
             <Ionicons name="save-outline" size={24} color="#00c853" />
           </TouchableOpacity>
         </View>
@@ -47,12 +99,21 @@ export default function EditarDatosImportantes() {
           onChangeText={setFechaNacimiento}
         />
 
-        <LabelInput
-          label="Sexo"
-          placeholder="Ejemplo: Masculino"
-          value={sexo}
-          onChangeText={setSexo}
-        />
+        {/* Picker para Sexo */}
+        <View style={{ marginBottom: 12 }}>
+          <Text style={styles.label}>Sexo</Text>
+          <View style={styles.inputContainer}>
+            <Picker
+              selectedValue={sexo}
+              onValueChange={setSexo}
+              style={{ color: sexo ? '#000' : '#aaa' }}
+            >
+              <Picker.Item label="Selecciona una opción" value="" color="#aaa" />
+              <Picker.Item label="Masculino" value="Masculino" />
+              <Picker.Item label="Femenino" value="Femenino" />
+            </Picker>
+          </View>
+        </View>
       </View>
 
       <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>

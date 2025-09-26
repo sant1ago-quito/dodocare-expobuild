@@ -1,5 +1,5 @@
 // app/editar-datos-complementarios.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,31 +7,86 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import { useRouter } from 'expo-router';
+import { getAuth } from 'firebase/auth';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 
 export default function EditarDatosComplementarios() {
+  const [nombre, setNombre] = useState('');
   const [peso, setPeso] = useState('');
   const [altura, setAltura] = useState('');
   const [sangre, setSangre] = useState('O+');
   const [direccion, setDireccion] = useState('');
   const [telefono, setTelefono] = useState('');
+  const [loading, setLoading] = useState(true);
 
   const router = useRouter();
+  const auth = getAuth();
+  const user = auth.currentUser;
+
+  useEffect(() => {
+    const cargarDatos = async () => {
+      if (user) {
+        const docRef = doc(db, 'pacientes', user.uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setNombre(data.nombre || '');
+          setPeso(data.peso || '');
+          setAltura(data.altura || '');
+          setSangre(data.tipoSangre || 'O+');
+          setDireccion(data.direccion || '');
+          setTelefono(data.telefono || '');
+        }
+      }
+      setLoading(false);
+    };
+    cargarDatos();
+  }, [user]);
+
+  const guardarDatos = async () => {
+    if (!user) return;
+    try {
+      const docRef = doc(db, 'pacientes', user.uid);
+      await updateDoc(docRef, {
+        nombre,
+        peso,
+        altura,
+        tipoSangre: sangre,
+        direccion,
+        telefono,
+      });
+      Alert.alert('Éxito', 'Datos guardados correctamente');
+      router.back();
+    } catch (e) {
+      Alert.alert('Error', 'No se pudieron guardar los datos');
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.name}>Cargando...</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Ionicons name="person-circle-outline" size={64} color="#1f2a44" />
-        <Text style={styles.name}>Javier Alejandro{"\n"}Rivas Perla</Text>
+        <Text style={styles.name}>{nombre}</Text>
       </View>
 
       <View style={styles.card}>
         <View style={styles.cardHeader}>
           <Text style={styles.sectionTitle}>Datos Complementarios</Text>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={guardarDatos}>
             <Ionicons name="save-outline" size={24} color="#00c853" />
           </TouchableOpacity>
         </View>

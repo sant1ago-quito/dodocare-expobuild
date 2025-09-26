@@ -18,23 +18,33 @@ export default function Register() {
       Alert.alert('Error', 'Por favor, completa todos los campos.');
       return;
     }
+    // Limpiar espacios y caracteres invisibles
+    const correoLimpio = correo.replace(/\s/g, '').trim();
+    // Validación de correo: debe tener letras y números, y formato de email
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(correoLimpio)) {
+      Alert.alert('Error', 'Ingresa un correo electrónico válido.');
+      return;
+    }
+    // No permitir solo números antes de la arroba
+    const correoParte = correoLimpio.split('@')[0];
+    if (/^\d+$/.test(correoParte)) {
+      Alert.alert('Error', 'El correo no puede ser solo números antes de la arroba.');
+      return;
+    }
     if (contrasena.length < 8) {
       Alert.alert('Error', 'La contraseña debe tener al menos 8 caracteres.');
       return;
     }
     try {
-      // 1. Crea el usuario en Auth
-      const userCredential = await createUserWithEmailAndPassword(auth, correo, contrasena);
+      const userCredential = await createUserWithEmailAndPassword(auth, correoLimpio, contrasena);
       const user = userCredential.user;
-
-      // 2. Crea el documento en Firestore
       await setDoc(doc(db, 'pacientes', user.uid), {
         email: user.email,
         nombre: nombre,
-        telefono: telefono, // Guarda el teléfono
+        telefono: telefono,
         role: 'user',
       });
-
       Alert.alert('Éxito', 'Usuario registrado correctamente.');
       router.push('/login-form');
     } catch (error: any) {

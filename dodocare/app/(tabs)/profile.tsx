@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,19 +6,116 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useAuth } from '../AuthContext'; // 👈 ajusta la ruta si es necesario
+import { useAuth } from '../AuthContext';
 import { getAuth } from 'firebase/auth';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { db } from '../../firebase';
+import { useFocusEffect } from '@react-navigation/native';
 
 export default function ProfileScreen() {
-  // TODOS los hooks aquí, nada de returns antes
   const { role } = useAuth();
   const router = useRouter();
   const auth = getAuth();
   const currentUser = auth.currentUser;
   const [search, setSearch] = useState('');
+  const [nombre, setNombre] = useState<string | null>(null);
+  const [loadingNombre, setLoadingNombre] = useState(true);
+  const [dui, setDui] = useState('');
+  const [fechaNacimiento, setFechaNacimiento] = useState('');
+  const [sexo, setSexo] = useState('');
+  const [peso, setPeso] = useState('');
+  const [altura, setAltura] = useState('');
+  const [tipoSangre, setTipoSangre] = useState('');
+  const [direccion, setDireccion] = useState('');
+  const [telefono, setTelefono] = useState('');
+  // NUEVOS ESTADOS:
+  const [alergias, setAlergias] = useState('');
+  const [medicamentos, setMedicamentos] = useState('');
+  const [condicion, setCondicion] = useState('');
+  const [contactoNombre, setContactoNombre] = useState('');
+  const [contactoParentesco, setContactoParentesco] = useState('');
+  const [contactoTipoSangre, setContactoTipoSangre] = useState('');
+  const [contactoTelefono, setContactoTelefono] = useState('');
+
+  useEffect(() => {
+    const fetchNombre = async () => {
+      if (currentUser) {
+        try {
+          const docRef = doc(db, 'pacientes', currentUser.uid);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            setNombre(docSnap.data().nombre || null);
+          } else {
+            setNombre(null);
+          }
+        } catch (e) {
+          setNombre(null);
+        }
+      }
+      setLoadingNombre(false);
+    };
+    fetchNombre();
+  }, [currentUser]);
+
+  const fetchDatos = async () => {
+    if (currentUser) {
+      const docRef = doc(db, 'pacientes', currentUser.uid);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setDui(data.dui || '');
+        setFechaNacimiento(data.fechaNacimiento || '');
+        setSexo(data.sexo || '');
+        setPeso(data.peso || '');
+        setAltura(data.altura || '');
+        setTipoSangre(data.tipoSangre || '');
+        setDireccion(data.direccion || '');
+        setTelefono(data.telefono || '');
+        // NUEVOS CAMPOS:
+        setAlergias(data.alergias || '');
+        setMedicamentos(data.medicamentos || '');
+        setCondicion(data.condicion || '');
+        setContactoNombre(data.contactoNombre || '');
+        setContactoParentesco(data.contactoParentesco || '');
+        setContactoTipoSangre(data.contactoTipoSangre || '');
+        setContactoTelefono(data.contactoTelefono || '');
+      }
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchDatos();
+    }, [])
+  );
+
+  const guardarDatosUsuario = async () => {
+    if (!currentUser) return;
+    const docRef = doc(db, 'pacientes', currentUser.uid);
+    await updateDoc(docRef, {
+      dui,
+      fechaNacimiento,
+      sexo,
+      peso,
+      altura,
+      tipoSangre,
+      direccion,
+      telefono,
+      // NUEVOS CAMPOS:
+      alergias,
+      medicamentos,
+      condicion,
+      contactoNombre,
+      contactoParentesco,
+      contactoTipoSangre,
+      contactoTelefono,
+    });
+    Alert.alert('Datos actualizados');
+  };
 
   // Solo bloquea si es invitado
   if (role === 'guest') {
@@ -43,47 +140,58 @@ export default function ProfileScreen() {
           source={require('@/assets/images/WelcomeIcon.png')}
           style={styles.welcomeIcon}
         />
-        <Text style={styles.name}>Javier Alejandro{"\n"}Rivas Perla</Text>
+        <Text style={styles.name}>
+          {loadingNombre
+            ? 'Cargando...'
+            : nombre
+              ? nombre
+              : 'Nombre no disponible'}
+        </Text>
       </View>
 
       {/* Sección: Datos Importantes */}
       <View style={styles.card}>
         <SectionHeader title="Datos Importantes" />
-        <InfoRow label="Dui" value="12345678-9" />
-        <InfoRow label="Fecha de Nacimiento" value="10/04/2001" />
-        <InfoRow label="Sexo" value="Masculino" />
+        <InfoRow label="Dui" value={dui} />
+        <InfoRow label="Fecha de Nacimiento" value={fechaNacimiento} />
+        <InfoRow label="Sexo" value={sexo} />
         <EditIcon onPress={() => router.push('/editar-datos-importantes')} />
       </View>
 
       {/* Sección: Datos Complementarios */}
       <View style={styles.card}>
         <SectionHeader title="Datos Complementarios" />
-        <InfoRow label="Peso" value="176.37 Libras" />
-        <InfoRow label="Altura" value="1.82 Metros" />
-        <InfoRow label="Tipo de Sangre" value="O+" />
-        <InfoRow label="Dirección" value="Colonia Milagro de la Paz" />
-        <InfoRow label="Teléfono" value="7682-8282" />
+        <InfoRow label="Peso" value={peso} />
+        <InfoRow label="Altura" value={altura} />
+        <InfoRow label="Tipo de Sangre" value={tipoSangre} />
+        <InfoRow label="Dirección" value={direccion} />
+        <InfoRow label="Teléfono" value={telefono} />
         <EditIcon onPress={() => router.push('/editar-datos-complementarios')} />
       </View>
 
       {/* Sección: Información Importante */}
       <View style={styles.card}>
         <SectionHeader title="Información Importante" />
-        <InfoRow label="Alergias" value="(no proporcionado)" />
-        <InfoRow label="Medicamentos" value="(no proporcionado)" />
-        <InfoRow label="Condición Médica" value="(no proporcionado)" />
+        <InfoRow label="Alergias" value={alergias} />
+        <InfoRow label="Medicamentos" value={medicamentos} />
+        <InfoRow label="Condición Médica" value={condicion} />
         <EditIcon onPress={() => router.push('/editar-info-medica')} />
       </View>
 
       {/* Sección: Contacto de Emergencia */}
       <View style={styles.card}>
         <SectionHeader title="Contacto de Emergencia" />
-        <InfoRow label="Nombre" value="(no proporcionado)" />
-        <InfoRow label="Parentesco" value="(no proporcionado)" />
-        <InfoRow label="Tipo de Sangre" value="(no proporcionado)" />
-        <InfoRow label="Teléfono" value="7682-8282" />
+        <InfoRow label="Nombre" value={contactoNombre} />
+        <InfoRow label="Parentesco" value={contactoParentesco} />
+        <InfoRow label="Tipo de Sangre" value={contactoTipoSangre} />
+        <InfoRow label="Teléfono" value={contactoTelefono} />
         <EditIcon onPress={() => router.push('/editar-contacto-emergencia')} />
       </View>
+
+      {/* Botón para guardar cambios */}
+      <TouchableOpacity style={styles.button} onPress={guardarDatosUsuario}>
+        <Text style={styles.buttonText}>Guardar Cambios</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 }
@@ -173,5 +281,22 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 18,
     textAlign: 'center',
+  },
+  input: {
+    backgroundColor: '#fff',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  button: {
+    backgroundColor: '#4CAF50',
+    padding: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
 });

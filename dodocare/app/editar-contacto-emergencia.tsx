@@ -1,5 +1,5 @@
 // app/editar-contacto-emergencia.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,29 +7,89 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { getAuth } from 'firebase/auth';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { db } from '../firebase';
+import { useFocusEffect } from '@react-navigation/native';
 
 export default function EditarContactoEmergencia() {
   const [nombre, setNombre] = useState('');
   const [parentesco, setParentesco] = useState('');
   const [tipoSangre, setTipoSangre] = useState('');
   const [telefono, setTelefono] = useState('');
+  const [nombreUsuario, setNombreUsuario] = useState('');
+  const [loading, setLoading] = useState(true);
 
   const router = useRouter();
+  const auth = getAuth();
+  const user = auth.currentUser;
+
+  const fetchDatos = async () => {
+    if (user) {
+      const docRef = doc(db, 'pacientes', user.uid);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setNombreUsuario(data.nombre || '');
+        setNombre(data.contactoNombre || '');
+        setParentesco(data.contactoParentesco || '');
+        setTipoSangre(data.contactoTipoSangre || '');
+        setTelefono(data.contactoTelefono || '');
+      }
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchDatos();
+  }, [user]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchDatos();
+    }, [])
+  );
+
+  const guardarDatos = async () => {
+    if (!user) return;
+    try {
+      const docRef = doc(db, 'pacientes', user.uid);
+      await updateDoc(docRef, {
+        contactoNombre: nombre,
+        contactoParentesco: parentesco,
+        contactoTipoSangre: tipoSangre,
+        contactoTelefono: telefono,
+      });
+      Alert.alert('Éxito', 'Datos guardados correctamente');
+      router.back();
+    } catch (e) {
+      Alert.alert('Error', 'No se pudieron guardar los datos');
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.name}>Cargando...</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Ionicons name="person-circle-outline" size={64} color="#1f2a44" />
-        <Text style={styles.name}>Javier Alejandro{"\n"}Rivas Perla</Text>
+        <Text style={styles.name}>{nombreUsuario}</Text>
       </View>
 
       <View style={styles.card}>
         <View style={styles.cardHeader}>
           <Text style={styles.sectionTitle}>Contacto de Emergencia</Text>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={guardarDatos}>
             <Ionicons name="save-outline" size={24} color="#00c853" />
           </TouchableOpacity>
         </View>
